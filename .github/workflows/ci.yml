@@ -23,7 +23,7 @@ jobs:
       - name: Verify on Windows
         if: runner.os == 'Windows'
         run: .\mvnw.cmd -B verify
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Test demo backend
