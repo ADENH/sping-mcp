@@ -14,7 +14,7 @@
   <description>A curated MCP adapter for Jagatlabs AI workflows</description>
   <properties>
     <java.version>21</java.version>
-    <spring-ai.version>1.1.8</spring-ai.version>
+    <spring-ai.version>2.0.2</spring-ai.version>
   </properties>
   <dependencyManagement>
     <dependencies>
