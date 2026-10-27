@@ -1,0 +1,39 @@
+services:
+  mock:
+    image: python:3.12-slim
+    user: "65532:65532"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./demo:/app:ro
+    command: [python, /app/mock_backend.py, --host, "0.0.0.0"]
+    ports:
+      - "127.0.0.1:8090:8090"
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  mcp:
+    profiles: [mcp]
+    build: .
+    image: jagatlabs-mcp-server:local
+    # Share the mock's network namespace so the adapter still uses loopback.
+    network_mode: service:mock
+    depends_on:
+      mock:
+        condition: service_healthy
+    stdin_open: true
+    tty: false
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      JAGATLABS_MODE: mock
+      JAGATLABS_BASE_URL: http://127.0.0.1:8090
+      JAGATLABS_TOKEN: demo-token

@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+target
+.superpowers
+.worktrees
+.idea
+.vscode
+*.log
+docs

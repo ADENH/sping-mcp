@@ -27,6 +27,8 @@ class JagatlabsClientTest {
     volatile int status = 200;
     volatile String response = "{}";
     volatile long delay;
+    volatile long bodyDelay;
+    volatile boolean chunked;
 
     @BeforeEach void start() throws Exception {
         server = HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
@@ -41,7 +43,15 @@ class JagatlabsClientTest {
             byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.getResponseHeaders().set("Location", "/credential-leak");
-            try { exchange.sendResponseHeaders(status, bytes.length); exchange.getResponseBody().write(bytes); }
+            try {
+                exchange.sendResponseHeaders(status, chunked ? 0 : bytes.length);
+                if (bodyDelay > 0) {
+                    exchange.getResponseBody().write(bytes, 0, 1);
+                    exchange.getResponseBody().flush();
+                    try { Thread.sleep(bodyDelay); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                    exchange.getResponseBody().write(bytes, 1, bytes.length - 1);
+                } else exchange.getResponseBody().write(bytes);
+            }
             finally { exchange.close(); }
         });
         server.start();
@@ -113,6 +123,28 @@ class JagatlabsClientTest {
         response = "x".repeat(2048);
         assertThatThrownBy(() -> client("fixture-token", 1024, Duration.ofSeconds(2)).getPrediction("pred-1"))
                 .hasMessage("INVALID_UPSTREAM_RESPONSE");
+    }
+    @Test void boundsDeadlineEvenAfterHeadersArrive() {
+        response = "{\"id\":\"pred-1\",\"status\":\"starting\"}";
+        bodyDelay = 700;
+        assertThatThrownBy(() -> client("fixture-token", 1024, Duration.ofMillis(150)).getPrediction("pred-1"))
+                .hasMessage("UPSTREAM_TIMEOUT");
+    }
+    @Test void rejectsChunkedOversizedResponseWithoutContentLength() {
+        chunked = true; response = "x".repeat(4096);
+        assertThatThrownBy(() -> client("fixture-token", 1024, Duration.ofSeconds(2)).getPrediction("pred-1"))
+                .hasMessage("INVALID_UPSTREAM_RESPONSE");
+    }
+    @Test void mapsAllowlistedModelInfoFields() {
+        response = "{\"model\":\"hidream-l1-fast\",\"description\":\"image model\",\"private_key\":\"secret\"}";
+        var model = client().getModelInfo();
+        assertThat(model.model()).isEqualTo("hidream-l1-fast");
+        assertThat(model.toString()).doesNotContain("private_key", "secret");
+        assertThat(authorization.get()).isNull();
+    }
+    @Test void reportsConnectionFailureWithoutExposingHostOrToken() {
+        server.stop(0);
+        assertThatThrownBy(() -> client().getPrediction("pred-1")).hasMessage("UPSTREAM_UNAVAILABLE");
     }
     @Test void rejectsMalformedJson() {
         response = "not json";
