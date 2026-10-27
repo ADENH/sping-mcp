@@ -1,0 +1,11 @@
+target/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+*.iml
+*.log
+__pycache__/
+.superpowers/
+.worktrees/
