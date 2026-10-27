@@ -143,7 +143,7 @@ GitHub Actions verifies Linux and Windows, builds the container, and tests the d
 
 If your Windows network uses a trusted TLS inspection certificate, Maven may need the Windows certificate store rather than your JDK's store. For that environment, set `MAVEN_OPTS=-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStore=NUL` in your shell. Certificate verification remains enabled; do not disable TLS checks.
 
-See [architecture and tradeoffs](docs/architecture.md), [approved design](docs/superpowers/specs/2026-10-27-jagatlabs-mcp-design.md), and [implementation plan](docs/superpowers/plans/2026-10-27-jagatlabs-mcp.md).
+See [architecture and tradeoffs](docs/architecture.md), [verification results](docs/verification.md), [approved design](docs/superpowers/specs/2026-10-27-jagatlabs-mcp-design.md), and [implementation plan](docs/superpowers/plans/2026-10-27-jagatlabs-mcp.md).
 
 ## Project status
 

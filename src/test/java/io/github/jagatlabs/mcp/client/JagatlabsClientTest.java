@@ -150,6 +150,12 @@ class JagatlabsClientTest {
         response = "not json";
         assertThatThrownBy(() -> client().getPrediction("pred-1")).hasMessage("INVALID_UPSTREAM_RESPONSE");
     }
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {" THIS IS NOT JSON", "{\"error\":\"failure\"}"})
+    void rejectsTrailingGarbageAndConcatenatedJson(String suffix) {
+        response = "{\"id\":\"pred-1\",\"status\":\"succeeded\"}" + suffix;
+        assertThatThrownBy(() -> client().getPrediction("pred-1")).hasMessage("INVALID_UPSTREAM_RESPONSE");
+    }
     @Test void rejectsStructurallyInvalidSuccess() {
         response = "{}";
         assertThatThrownBy(() -> client().getPrediction("pred-1")).hasMessage("INVALID_UPSTREAM_RESPONSE");

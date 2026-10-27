@@ -1,7 +1,9 @@
 package io.github.jagatlabs.mcp.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import io.github.jagatlabs.mcp.config.JagatlabsProperties;
 import io.github.jagatlabs.mcp.model.*;
 import org.springframework.stereotype.Component;
@@ -18,11 +20,13 @@ import java.util.concurrent.*;
 public class JagatlabsClient {
     private final JagatlabsProperties properties;
     private final ObjectMapper mapper;
+    private final ObjectReader responseReader;
     private final HttpClient http;
 
     public JagatlabsClient(JagatlabsProperties properties, ObjectMapper mapper) {
         this.properties = properties;
         this.mapper = mapper;
+        this.responseReader = mapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
         this.http = HttpClient.newBuilder().connectTimeout(properties.connectTimeout())
                 .followRedirects(HttpClient.Redirect.NEVER).build();
     }
@@ -86,7 +90,7 @@ public class JagatlabsClient {
                 default -> status >= 500 || status >= 300 && status < 400 ? "UPSTREAM_UNAVAILABLE" : "UPSTREAM_REJECTED";
             });
             JsonNode result;
-            try { result = mapper.readTree(response.body()); }
+            try { result = responseReader.readTree(response.body()); }
             catch (Exception e) { throw new JagatlabsException("INVALID_UPSTREAM_RESPONSE"); }
             require(result != null && result.isObject());
             require(!result.path("ok").isBoolean() || result.path("ok").asBoolean());
